@@ -1,0 +1,51 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "plates-cloud",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-20",
+  "observability": { "enabled": true },
+  "ai": { "binding": "AI" },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Device"] }],
+  "durable_objects": {
+    "bindings": [{ "name": "DEVICE", "class_name": "Device" }]
+  },
+  "vars": {
+    "APPLE_TEAM_ID": "",
+    "APP_BUNDLE_ID": "",
+    "APP_ATTEST_ENVIRONMENT": "",
+    "WRITE_DAILY_LIMIT": "",
+    "DECIDE_DAILY_LIMIT": ""
+  },
+  "env": {
+    "staging": {
+      "name": "plates-cloud-beta",
+      "observability": { "enabled": true },
+      "ai": { "binding": "AI" },
+      "durable_objects": {
+        "bindings": [{ "name": "DEVICE", "class_name": "Device" }]
+      },
+      "vars": {
+        "APPLE_TEAM_ID": "",
+        "APP_BUNDLE_ID": "",
+        "APP_ATTEST_ENVIRONMENT": "",
+        "WRITE_DAILY_LIMIT": "",
+        "DECIDE_DAILY_LIMIT": ""
+      }
+    },
+    "production": {
+      "name": "plates-cloud",
+      "observability": { "enabled": true },
+      "ai": { "binding": "AI" },
+      "durable_objects": {
+        "bindings": [{ "name": "DEVICE", "class_name": "Device" }]
+      },
+      "vars": {
+        "APPLE_TEAM_ID": "",
+        "APP_BUNDLE_ID": "",
+        "APP_ATTEST_ENVIRONMENT": "",
+        "WRITE_DAILY_LIMIT": "",
+        "DECIDE_DAILY_LIMIT": ""
+      }
+    }
+  }
+}
