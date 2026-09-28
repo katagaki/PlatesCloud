@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "plates-cloud",
   "main": "src/index.ts",
-  "compatibility_date": "2026-09-20",
+  "compatibility_date": "2026-08-22",
   "observability": { "enabled": true },
   "ai": { "binding": "AI" },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Device"] }],
