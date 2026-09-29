@@ -27,6 +27,8 @@ Plain vars are read from the environment by `cloudflare.config.ts` at deploy tim
 | `WRITE_DAILY_LIMIT` | Granite calls per device per day, ideas and recipes together |
 | `DECIDE_DAILY_LIMIT` | Decide for me picks per device per day |
 
+The two limits are defaults. A device whose Durable Object has a row in its `limits` table (`kind` is `write` or `decide`, `daily` a whole number) uses that instead, so one device can be given more or fewer calls without a deploy.
+
 Outside CI, secrets are uploaded with `npm run deploy:staging -- --secrets-file secrets.json` (or `deploy:production`), or kept in a gitignored `.dev.vars` copied from `.dev.vars.example`:
 
 | Secret | Where it comes from |
