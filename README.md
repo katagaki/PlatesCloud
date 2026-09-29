@@ -29,6 +29,17 @@ Plain vars are read from the environment by `cloudflare.config.ts` at deploy tim
 
 The two limits are defaults. A device whose Durable Object has a row in its `limits` table (`kind` is `write` or `decide`, `daily` a whole number) uses that instead, so one device can be given more or fewer calls without a deploy.
 
+Each device's Durable Object is named by its key ID in base64url and keeps everything in SQL tables, so it can be read and edited from the Data Studio in the Cloudflare dashboard:
+
+| Table | Holds |
+| --- | --- |
+| `limits` | Per-device daily limits, as above |
+| `key` | The attested public key and the last assertion counter |
+| `usage` | Calls used today, one row per `kind` |
+| `answers` | Today's recent Decide for me answers by `request_id` |
+
+For example, `INSERT OR REPLACE INTO limits (kind, daily) VALUES ('write', 50)` gives a device 50 Granite calls a day.
+
 Outside CI, secrets are uploaded with `npm run deploy:staging -- --secrets-file secrets.json` (or `deploy:production`), or kept in a gitignored `.dev.vars` copied from `.dev.vars.example`:
 
 | Secret | Where it comes from |

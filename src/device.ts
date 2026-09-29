@@ -5,12 +5,6 @@ import type { Env } from "./env";
 
 export type Kind = "write" | "decide";
 
-interface Usage {
-  day: string;
-  count: number;
-  answers: [string, Pick][];
-}
-
 export interface Reservation {
   allowed: boolean;
   remaining: number;
@@ -22,29 +16,45 @@ const KEPT_ANSWERS = 20;
 export class Device extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS limits (kind TEXT PRIMARY KEY, daily INTEGER)");
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS limits (kind TEXT PRIMARY KEY, daily INTEGER);
+      CREATE TABLE IF NOT EXISTS key (id INTEGER PRIMARY KEY CHECK (id = 1), point BLOB NOT NULL, counter INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS usage (kind TEXT PRIMARY KEY, day TEXT NOT NULL, count INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS answers (request_id TEXT PRIMARY KEY, kind TEXT NOT NULL, day TEXT NOT NULL, answer TEXT NOT NULL);
+    `);
+  }
+
+  private get sql() {
+    return this.ctx.storage.sql;
   }
 
   private limit(kind: Kind, fallback: number): number {
-    const daily = this.ctx.storage.sql.exec("SELECT daily FROM limits WHERE kind = ?", kind).toArray()[0]?.daily;
+    const daily = this.sql.exec("SELECT daily FROM limits WHERE kind = ?", kind).toArray()[0]?.daily;
     return Number.isSafeInteger(daily) && (daily as number) >= 0 ? (daily as number) : fallback;
   }
 
-  async register(point: Uint8Array): Promise<boolean> {
-    if (await this.ctx.storage.get("point")) return false;
-    await this.ctx.storage.put({ point, counter: 0 });
+  private count(kind: Kind, day: string): number {
+    return (this.sql.exec("SELECT count FROM usage WHERE kind = ? AND day = ?", kind, day).toArray()[0]?.count as number) ?? 0;
+  }
+
+  private setCount(kind: Kind, day: string, count: number): void {
+    this.sql.exec("INSERT OR REPLACE INTO usage (kind, day, count) VALUES (?, ?, ?)", kind, day, count);
+  }
+
+  register(point: Uint8Array): boolean {
+    if (this.sql.exec("SELECT 1 FROM key").toArray().length > 0) return false;
+    this.sql.exec("INSERT INTO key (id, point, counter) VALUES (1, ?, 0)", point.slice().buffer);
     return true;
   }
 
   async authenticate(assertion: Uint8Array, clientData: Uint8Array, appId: string): Promise<boolean> {
     let passed = false;
     await this.ctx.blockConcurrencyWhile(async () => {
-      const point = await this.ctx.storage.get<Uint8Array>("point");
-      if (!point) return;
-      const last = (await this.ctx.storage.get<number>("counter")) ?? 0;
+      const row = this.sql.exec("SELECT point, counter FROM key").toArray()[0];
+      if (!row) return;
       try {
-        const counter = await verifyAssertion(assertion, clientData, point, appId, last);
-        await this.ctx.storage.put("counter", counter);
+        const counter = await verifyAssertion(assertion, clientData, new Uint8Array(row.point as ArrayBuffer), appId, row.counter as number);
+        this.sql.exec("UPDATE key SET counter = ?", counter);
         passed = true;
       } catch {
         passed = false;
@@ -53,36 +63,30 @@ export class Device extends DurableObject<Env> {
     return passed;
   }
 
-  private async usage(kind: Kind, day: string): Promise<Usage> {
-    const stored = await this.ctx.storage.get<Usage>(`usage:${kind}`);
-    return stored && stored.day === day ? stored : { day, count: 0, answers: [] };
-  }
-
-  async reserve(kind: Kind, day: string, fallback: number, requestId?: string): Promise<Reservation> {
+  reserve(kind: Kind, day: string, fallback: number, requestId?: string): Reservation {
     const limit = this.limit(kind, fallback);
-    const usage = await this.usage(kind, day);
-    const cached = requestId ? usage.answers.find(([id]) => id === requestId) : undefined;
-    if (cached) return { allowed: true, remaining: Math.max(0, limit - usage.count), answer: cached[1] };
-    if (usage.count >= limit) return { allowed: false, remaining: 0 };
-    usage.count += 1;
-    await this.ctx.storage.put(`usage:${kind}`, usage);
-    return { allowed: true, remaining: limit - usage.count };
+    const count = this.count(kind, day);
+    const cached = requestId
+      ? this.sql.exec("SELECT answer FROM answers WHERE request_id = ? AND kind = ? AND day = ?", requestId, kind, day).toArray()[0]
+      : undefined;
+    if (cached) return { allowed: true, remaining: Math.max(0, limit - count), answer: JSON.parse(cached.answer as string) };
+    if (count >= limit) return { allowed: false, remaining: 0 };
+    this.setCount(kind, day, count + 1);
+    return { allowed: true, remaining: limit - count - 1 };
   }
 
-  async release(kind: Kind, day: string): Promise<void> {
-    const usage = await this.usage(kind, day);
-    if (usage.count === 0) return;
-    usage.count -= 1;
-    await this.ctx.storage.put(`usage:${kind}`, usage);
+  release(kind: Kind, day: string): void {
+    const count = this.count(kind, day);
+    if (count > 0) this.setCount(kind, day, count - 1);
   }
 
-  async remember(kind: Kind, day: string, requestId: string, answer: Pick): Promise<void> {
-    const usage = await this.usage(kind, day);
-    usage.answers = [...usage.answers.filter(([id]) => id !== requestId), [requestId, answer] as [string, Pick]].slice(-KEPT_ANSWERS);
-    await this.ctx.storage.put(`usage:${kind}`, usage);
+  remember(kind: Kind, day: string, requestId: string, answer: Pick): void {
+    this.sql.exec("DELETE FROM answers WHERE day != ?", day);
+    this.sql.exec("INSERT OR REPLACE INTO answers (request_id, kind, day, answer) VALUES (?, ?, ?, ?)", requestId, kind, day, JSON.stringify(answer));
+    this.sql.exec("DELETE FROM answers WHERE rowid NOT IN (SELECT rowid FROM answers ORDER BY rowid DESC LIMIT ?)", KEPT_ANSWERS);
   }
 
-  async remaining(kind: Kind, day: string, fallback: number): Promise<number> {
-    return Math.max(0, this.limit(kind, fallback) - (await this.usage(kind, day)).count);
+  remaining(kind: Kind, day: string, fallback: number): number {
+    return Math.max(0, this.limit(kind, fallback) - this.count(kind, day));
   }
 }
