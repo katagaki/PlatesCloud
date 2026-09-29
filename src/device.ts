@@ -20,6 +20,15 @@ export interface Reservation {
 const KEPT_ANSWERS = 20;
 
 export class Device extends DurableObject<Env> {
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS flags (name TEXT PRIMARY KEY)");
+  }
+
+  private unlimited(): boolean {
+    return this.ctx.storage.sql.exec("SELECT 1 FROM flags WHERE name = 'unlimited'").toArray().length > 0;
+  }
+
   async register(point: Uint8Array): Promise<boolean> {
     if (await this.ctx.storage.get("point")) return false;
     await this.ctx.storage.put({ point, counter: 0 });
@@ -52,6 +61,7 @@ export class Device extends DurableObject<Env> {
     const usage = await this.usage(kind, day);
     const cached = requestId ? usage.answers.find(([id]) => id === requestId) : undefined;
     if (cached) return { allowed: true, remaining: Math.max(0, limit - usage.count), answer: cached[1] };
+    if (this.unlimited()) return { allowed: true, remaining: Math.max(0, limit - usage.count) };
     if (usage.count >= limit) return { allowed: false, remaining: 0 };
     usage.count += 1;
     await this.ctx.storage.put(`usage:${kind}`, usage);
@@ -60,7 +70,7 @@ export class Device extends DurableObject<Env> {
 
   async release(kind: Kind, day: string): Promise<void> {
     const usage = await this.usage(kind, day);
-    if (usage.count === 0) return;
+    if (usage.count === 0 || this.unlimited()) return;
     usage.count -= 1;
     await this.ctx.storage.put(`usage:${kind}`, usage);
   }

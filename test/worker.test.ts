@@ -1,4 +1,4 @@
-import { env } from "cloudflare:test";
+import { env, runInDurableObject } from "cloudflare:test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { base64Encode } from "../src/bytes";
 import type { Env } from "../src/env";
@@ -109,6 +109,18 @@ describe("writing", () => {
     const over = await phone.post("/v1/chat/completions", chat);
     expect(over.status).toBe(429);
     expect(over.headers.get("X-Plates-Remaining")).toBe("0");
+  });
+
+  it("never meters a device flagged unlimited in its storage", async () => {
+    const phone = await Phone.create();
+    await runInDurableObject(phone.stub(), (_, state) => {
+      state.storage.sql.exec("INSERT INTO flags (name) VALUES ('unlimited')");
+    });
+    for (let i = 0; i < 5; i++) {
+      const response = await phone.post("/v1/chat/completions", chat);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("X-Plates-Remaining")).toBe("3");
+    }
   });
 
   it("rejects messages it will not pass on", async () => {
