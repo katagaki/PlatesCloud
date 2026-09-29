@@ -32,22 +32,50 @@ jobs:
     if: (github.event_name == 'release' && github.event.release.prerelease) || github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - uses: actions/checkout@v4
       - uses: cloudflare/wrangler-action@v3
+        env:
+          CHALLENGE_SECRET: ${{ secrets.CHALLENGE_SECRET }}
+          JEV_API_KEY: ${{ secrets.JEV_API_KEY }}
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           wranglerVersion: "4.129.0"
-          command: deploy --env staging
+          environment: staging
+          secrets: |
+            CHALLENGE_SECRET
+            JEV_API_KEY
+          command: >-
+            deploy --env staging
+            --var APPLE_TEAM_ID:${{ vars.APPLE_TEAM_ID }}
+            --var APP_BUNDLE_ID:${{ vars.APP_BUNDLE_ID }}
+            --var APP_ATTEST_ENVIRONMENT:${{ vars.APP_ATTEST_ENVIRONMENT }}
+            --var WRITE_DAILY_LIMIT:${{ vars.WRITE_DAILY_LIMIT }}
+            --var DECIDE_DAILY_LIMIT:${{ vars.DECIDE_DAILY_LIMIT }}
 
   production:
     if: github.event_name == 'release' && !github.event.release.prerelease
     needs: test
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: cloudflare/wrangler-action@v3
+        env:
+          CHALLENGE_SECRET: ${{ secrets.CHALLENGE_SECRET }}
+          JEV_API_KEY: ${{ secrets.JEV_API_KEY }}
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           wranglerVersion: "4.129.0"
-          command: deploy --env production
+          environment: production
+          secrets: |
+            CHALLENGE_SECRET
+            JEV_API_KEY
+          command: >-
+            deploy --env production
+            --var APPLE_TEAM_ID:${{ vars.APPLE_TEAM_ID }}
+            --var APP_BUNDLE_ID:${{ vars.APP_BUNDLE_ID }}
+            --var APP_ATTEST_ENVIRONMENT:${{ vars.APP_ATTEST_ENVIRONMENT }}
+            --var WRITE_DAILY_LIMIT:${{ vars.WRITE_DAILY_LIMIT }}
+            --var DECIDE_DAILY_LIMIT:${{ vars.DECIDE_DAILY_LIMIT }}

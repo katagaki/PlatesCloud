@@ -13,6 +13,8 @@ npm run deploy:production
 
 CI tests every push and deploys on published GitHub Releases: a prerelease goes to staging, a full release to production, using a `CLOUDFLARE_API_TOKEN` secret scoped to Edit Cloudflare Workers.
 
+The deploy jobs run in the `staging` and `production` GitHub Environments. Each environment holds the vars below as Variables and the secrets below as Secrets; CI passes the vars with `--var` and uploads the secrets before deploying.
+
 ## Settings
 
 Plain vars live in `cloudflare.config.ts` (and `wrangler.jsonc` while CI still deploys with Wrangler), and are empty until set. An endpoint that needs a missing setting answers 503 rather than running unchecked.
@@ -25,7 +27,7 @@ Plain vars live in `cloudflare.config.ts` (and `wrangler.jsonc` while CI still d
 | `WRITE_DAILY_LIMIT` | Granite calls per device per day, ideas and recipes together |
 | `DECIDE_DAILY_LIMIT` | Decide for me picks per device per day |
 
-Secrets are set with `npx wrangler secret put NAME --env staging` (and again for `--env production`), or in a gitignored `.dev.vars` copied from `.dev.vars.example`:
+Outside CI, secrets are set with `npx wrangler secret put NAME --env staging` (and again for `--env production`), or in a gitignored `.dev.vars` copied from `.dev.vars.example`:
 
 | Secret | Where it comes from |
 | --- | --- |
