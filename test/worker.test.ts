@@ -78,21 +78,21 @@ describe("writing", () => {
     expect((await phone.post("/v1/chat/completions", chat, { assertion })).status).toBe(401);
   });
 
-  it("returns Granite's answer in the Chat Completions shape", async () => {
+  it("returns Gemma's answer in the Chat Completions shape", async () => {
     const phone = await Phone.create();
-    const run = vi.fn(async () => ({ response: "Egg Fried Rice" }));
+    const run = vi.fn(async () => ({ choices: [{ message: { content: "Egg Fried Rice" } }] }));
     const response = await phone.post("/v1/chat/completions", { ...chat, temperature: 0.2 }, { ai: { run } });
     const body = (await response.json()) as { choices: { message: { content: string } }[] };
     expect(body.choices[0].message.content).toBe("Egg Fried Rice");
     expect(response.headers.get("X-Plates-Remaining")).toBe("2");
-    expect(run).toHaveBeenCalledWith("@cf/ibm-granite/granite-4.0-h-micro", {
+    expect(run).toHaveBeenCalledWith("@cf/google/gemma-4-26b-a4b-it", {
       messages: chat.messages, max_tokens: 1400, temperature: 0.2, stream: false,
     });
   });
 
-  it("streams Granite's text as chat completion chunks", async () => {
+  it("streams Gemma's text as chat completion chunks", async () => {
     const phone = await Phone.create();
-    const run = async () => sse({ response: "Egg " }, { response: "Fried Rice" });
+    const run = async () => sse({ choices: [{ delta: { content: "Egg " } }] }, { choices: [{ delta: { content: "Fried Rice" } }] });
     const response = await phone.post("/v1/chat/completions", { ...chat, stream: true }, { ai: { run } });
     const text = await response.text();
     const contents = text.split("\n\n").filter((line) => line.startsWith("data: {"))
@@ -103,7 +103,7 @@ describe("writing", () => {
 
   it("stops at the daily limit and gives back a failed write", async () => {
     const phone = await Phone.create();
-    const broken = { run: async () => { throw new Error("granite is down"); } };
+    const broken = { run: async () => { throw new Error("gemma is down"); } };
     expect((await phone.post("/v1/chat/completions", chat, { ai: broken })).status).toBe(502);
     for (let i = 0; i < 3; i++) expect((await phone.post("/v1/chat/completions", chat)).status).toBe(200);
     const over = await phone.post("/v1/chat/completions", chat);

@@ -3,7 +3,7 @@ import { base64Decode, base64UrlEncode } from "./bytes";
 import { type Pick, askJev, parseDecision } from "./decide";
 import { Device, type Kind } from "./device";
 import { type Env, appId, limit } from "./env";
-import { GRANITE_MODEL, completion, completionStream, parseChat } from "./granite";
+import { GEMMA_MODEL, completion, completionStream, parseChat } from "./gemma";
 
 export { Device };
 
@@ -115,10 +115,10 @@ async function write(request: Request, env: Env): Promise<Response> {
   const stub = await authenticated(request, env, bytes);
   if (stub instanceof Response) return stub;
   return metered(stub, "write", localDay(minutes), most, undefined, async (remaining) => {
-    const result = await env.AI.run(GRANITE_MODEL, chat);
+    const result = await env.AI.run(GEMMA_MODEL, chat);
     const headers = { "X-Plates-Remaining": String(remaining) };
     if (chat.stream) {
-      if (!(result instanceof ReadableStream)) throw new Error("granite returned no stream");
+      if (!(result instanceof ReadableStream)) throw new Error("gemma returned no stream");
       return new Response(completionStream(result), {
         headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", ...headers },
       });

@@ -1,4 +1,4 @@
-export const GRANITE_MODEL = "@cf/ibm-granite/granite-4.0-h-micro";
+export const GEMMA_MODEL = "@cf/google/gemma-4-26b-a4b-it";
 export const MAX_OUTPUT_TOKENS = 1400;
 const MAX_MESSAGES = 16;
 const MAX_CHARACTERS = 24_000;
@@ -49,7 +49,7 @@ export function completion(result: unknown): object {
     id: `chatcmpl-${crypto.randomUUID()}`,
     object: "chat.completion",
     created: Math.floor(Date.now() / 1000),
-    model: GRANITE_MODEL,
+    model: GEMMA_MODEL,
     choices: [{ index: 0, message: { role: "assistant", content: text(result) }, finish_reason: "stop" }],
   };
 }
@@ -62,7 +62,7 @@ export function completionStream(source: ReadableStream<Uint8Array>): ReadableSt
   let buffer = "";
   const chunk = (delta: object, finish: string | null) =>
     encoder.encode(`data: ${JSON.stringify({
-      id, object: "chat.completion.chunk", created, model: GRANITE_MODEL,
+      id, object: "chat.completion.chunk", created, model: GEMMA_MODEL,
       choices: [{ index: 0, delta, finish_reason: finish }],
     })}\n\n`);
 

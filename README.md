@@ -1,6 +1,6 @@
 # PlatesCloud
 
-The server side of Plates: one Cloudflare Worker that writes recipes with Granite on Workers AI and, when the cook taps Decide for me, asks TypeSafe's Jev to pick one of the recipe ideas. Every call is signed with App Attest, and each device has a Durable Object that holds its key, its assertion counter, and its daily counts.
+The server side of Plates: one Cloudflare Worker that writes recipes with Gemma 4 on Workers AI and, when the cook taps Decide for me, asks TypeSafe's Jev to pick one of the recipe ideas. Every call is signed with App Attest, and each device has a Durable Object that holds its key, its assertion counter, and its daily counts.
 
 ## Develop and deploy
 
@@ -24,7 +24,7 @@ Plain vars are read from the environment by `cloudflare.config.ts` at deploy tim
 | `APPLE_TEAM_ID` | The 10-character Apple team ID |
 | `APP_BUNDLE_ID` | The app's bundle ID, `com.tsubuzaki.Plates` |
 | `APP_ATTEST_ENVIRONMENT` | `development` for debug builds, `production` for TestFlight and the App Store |
-| `WRITE_DAILY_LIMIT` | Granite calls per device per day, ideas and recipes together |
+| `WRITE_DAILY_LIMIT` | Gemma calls per device per day, ideas and recipes together |
 | `DECIDE_DAILY_LIMIT` | Decide for me picks per device per day |
 
 The two limits are defaults. A device whose Durable Object has a row in its `limits` table (`kind` is `write` or `decide`, `daily` a whole number) uses that instead, so one device can be given more or fewer calls without a deploy.
@@ -38,7 +38,7 @@ Each device's Durable Object is named by its key ID in base64url and keeps every
 | `usage` | Calls used today, one row per `kind` |
 | `answers` | Today's recent Decide for me answers by `request_id` |
 
-For example, `INSERT OR REPLACE INTO limits (kind, daily) VALUES ('write', 50)` gives a device 50 Granite calls a day.
+For example, `INSERT OR REPLACE INTO limits (kind, daily) VALUES ('write', 50)` gives a device 50 Gemma calls a day.
 
 Outside CI, secrets are uploaded with `npm run deploy:staging -- --secrets-file secrets.json` (or `deploy:production`), or kept in a gitignored `.dev.vars` copied from `.dev.vars.example`:
 
@@ -63,7 +63,7 @@ Everything is `POST` except `/health`. The signed endpoints take three headers:
 | --- | --- | --- |
 | `/v1/challenge` | No | Returns `{ "challenge" }`, good for five minutes |
 | `/v1/attest` | No | Takes `{ keyId, attestation, challenge }`. The attestation's client data hash is the SHA-256 of the challenge string's UTF-8 bytes. Registers the key once |
-| `/v1/chat/completions` | Yes | OpenAI Chat Completions in and out, streamed when `stream` is true. Always Granite 4.0 H-Micro; `max_tokens` is capped at 1,400 |
+| `/v1/chat/completions` | Yes | OpenAI Chat Completions in and out, streamed when `stream` is true. Always Gemma 4 26B A4B; `max_tokens` is capped at 1,400 |
 | `/v1/decide` | Yes | Takes `{ requestId, request, ingredients, tools, ideas: [{ title, summary }] }` and returns `{ index, confidence, probabilities, remaining }` |
 | `/v1/decide/remaining` | Yes | Returns `{ remaining }` for today |
 
