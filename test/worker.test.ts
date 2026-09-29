@@ -111,16 +111,17 @@ describe("writing", () => {
     expect(over.headers.get("X-Plates-Remaining")).toBe("0");
   });
 
-  it("never meters a device flagged unlimited in its storage", async () => {
+  it("uses a limit set in the device's storage over the default", async () => {
     const phone = await Phone.create();
     await runInDurableObject(phone.stub(), (_, state) => {
-      state.storage.sql.exec("INSERT INTO flags (name) VALUES ('unlimited')");
+      state.storage.sql.exec("INSERT INTO limits (kind, daily) VALUES ('write', 5), ('decide', 'lots')");
     });
-    for (let i = 0; i < 5; i++) {
+    for (let i = 4; i >= 0; i--) {
       const response = await phone.post("/v1/chat/completions", chat);
-      expect(response.status).toBe(200);
-      expect(response.headers.get("X-Plates-Remaining")).toBe("3");
+      expect(response.headers.get("X-Plates-Remaining")).toBe(String(i));
     }
+    expect((await phone.post("/v1/chat/completions", chat)).status).toBe(429);
+    expect(await (await phone.post("/v1/decide/remaining", {})).json()).toEqual({ remaining: 2 });
   });
 
   it("rejects messages it will not pass on", async () => {

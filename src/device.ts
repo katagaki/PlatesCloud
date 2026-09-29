@@ -22,11 +22,12 @@ const KEPT_ANSWERS = 20;
 export class Device extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS flags (name TEXT PRIMARY KEY)");
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS limits (kind TEXT PRIMARY KEY, daily INTEGER)");
   }
 
-  private unlimited(): boolean {
-    return this.ctx.storage.sql.exec("SELECT 1 FROM flags WHERE name = 'unlimited'").toArray().length > 0;
+  private limit(kind: Kind, fallback: number): number {
+    const daily = this.ctx.storage.sql.exec("SELECT daily FROM limits WHERE kind = ?", kind).toArray()[0]?.daily;
+    return Number.isSafeInteger(daily) && (daily as number) >= 0 ? (daily as number) : fallback;
   }
 
   async register(point: Uint8Array): Promise<boolean> {
@@ -57,11 +58,11 @@ export class Device extends DurableObject<Env> {
     return stored && stored.day === day ? stored : { day, count: 0, answers: [] };
   }
 
-  async reserve(kind: Kind, day: string, limit: number, requestId?: string): Promise<Reservation> {
+  async reserve(kind: Kind, day: string, fallback: number, requestId?: string): Promise<Reservation> {
+    const limit = this.limit(kind, fallback);
     const usage = await this.usage(kind, day);
     const cached = requestId ? usage.answers.find(([id]) => id === requestId) : undefined;
     if (cached) return { allowed: true, remaining: Math.max(0, limit - usage.count), answer: cached[1] };
-    if (this.unlimited()) return { allowed: true, remaining: Math.max(0, limit - usage.count) };
     if (usage.count >= limit) return { allowed: false, remaining: 0 };
     usage.count += 1;
     await this.ctx.storage.put(`usage:${kind}`, usage);
@@ -70,7 +71,7 @@ export class Device extends DurableObject<Env> {
 
   async release(kind: Kind, day: string): Promise<void> {
     const usage = await this.usage(kind, day);
-    if (usage.count === 0 || this.unlimited()) return;
+    if (usage.count === 0) return;
     usage.count -= 1;
     await this.ctx.storage.put(`usage:${kind}`, usage);
   }
@@ -81,7 +82,7 @@ export class Device extends DurableObject<Env> {
     await this.ctx.storage.put(`usage:${kind}`, usage);
   }
 
-  async remaining(kind: Kind, day: string, limit: number): Promise<number> {
-    return Math.max(0, limit - (await this.usage(kind, day)).count);
+  async remaining(kind: Kind, day: string, fallback: number): Promise<number> {
+    return Math.max(0, this.limit(kind, fallback) - (await this.usage(kind, day)).count);
   }
 }
