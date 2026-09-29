@@ -7,15 +7,15 @@ The server side of Plates: one Cloudflare Worker that writes recipes with Granit
 ```bash
 npm install && npm test
 npm run dev
-npx wrangler deploy --env staging
-npx wrangler deploy --env production
+npm run deploy:staging
+npm run deploy:production
 ```
 
 CI tests every push and deploys on published GitHub Releases: a prerelease goes to staging, a full release to production, using a `CLOUDFLARE_API_TOKEN` secret scoped to Edit Cloudflare Workers.
 
 ## Settings
 
-Plain vars live in `wrangler.jsonc`, once per environment, and are empty until set. An endpoint that needs a missing setting answers 503 rather than running unchecked.
+Plain vars live in `cloudflare.config.ts` (and `wrangler.jsonc` while CI still deploys with Wrangler), and are empty until set. An endpoint that needs a missing setting answers 503 rather than running unchecked.
 
 | Var | Meaning |
 | --- | --- |
