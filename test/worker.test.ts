@@ -139,7 +139,9 @@ describe("writing", () => {
       expect(response.headers.get("X-Plates-Remaining")).toBe(String(i));
     }
     expect((await phone.post("/v1/chat/completions", chat)).status).toBe(429);
-    expect(await (await phone.post("/v1/decide/remaining", {})).json()).toEqual({ remaining: 2 });
+    expect(await (await phone.post("/v1/limits", {})).json()).toEqual({
+      write: { limit: 5, remaining: 0 }, ideate: { limit: 2, remaining: 2 }, decide: { limit: 2, remaining: 2 },
+    });
   });
 
   it("rejects messages it will not pass on", async () => {
@@ -181,8 +183,8 @@ describe("deciding", () => {
     expect((await phone.post("/v1/decide", { ...ideas, requestId: "a" })).status).toBe(200);
     expect((await phone.post("/v1/decide", { ...ideas, requestId: "b" })).status).toBe(200);
     expect((await phone.post("/v1/decide", { ...ideas, requestId: "c" })).status).toBe(429);
-    const remaining = await phone.post("/v1/decide/remaining", {});
-    expect(await remaining.json()).toEqual({ remaining: 0 });
+    const limits = await phone.post("/v1/limits", {});
+    expect(await limits.json()).toMatchObject({ decide: { limit: 2, remaining: 0 } });
     const other = await Phone.create();
     expect((await other.post("/v1/decide", { ...ideas, requestId: "d" })).status).toBe(200);
   });

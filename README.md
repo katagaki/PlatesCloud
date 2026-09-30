@@ -59,6 +59,6 @@ Everything is `POST` except `/health`. The signed endpoints take three headers:
 | `/v1/chat/completions` | Yes | OpenAI Chat Completions in and out, streamed when `stream` is true. Always Gemma 4 26B A4B; `max_tokens` is capped at 1,400 |
 | `/v1/ideate` | Yes | The same as `/v1/chat/completions`, for the dish ideas: counted against `IDEATE_DAILY_LIMIT`, with `max_tokens` capped at 500 |
 | `/v1/decide` | Yes | Takes `{ requestId, request, ingredients, tools, ideas: [{ title, summary }] }` and returns `{ index, confidence, probabilities, remaining }` |
-| `/v1/decide/remaining` | Yes | Returns `{ remaining }` for today |
+| `/v1/limits` | Yes | Returns today's `{ limit, remaining }` for each of `write`, `ideate`, and `decide`, without counting anything |
 
 A metered call that fails upstream is given back. A retried Decide for me with the same `requestId` returns the first answer without counting again. Every metered response carries `X-Plates-Remaining`, and a call past the limit gets 429.

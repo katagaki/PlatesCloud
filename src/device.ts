@@ -82,7 +82,8 @@ export class Device extends DurableObject<Env> {
     await this.ctx.storage.put(`usage:${kind}`, usage);
   }
 
-  async remaining(kind: Kind, day: string, fallback: number): Promise<number> {
-    return Math.max(0, this.limit(kind, fallback) - (await this.usage(kind, day)).count);
+  async allowance(kind: Kind, day: string, fallback: number): Promise<{ limit: number; remaining: number }> {
+    const limit = this.limit(kind, fallback);
+    return { limit, remaining: Math.max(0, limit - (await this.usage(kind, day)).count) };
   }
 }

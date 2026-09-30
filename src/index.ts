@@ -155,15 +155,17 @@ async function decide(request: Request, env: Env): Promise<Response> {
   );
 }
 
-async function remaining(request: Request, env: Env): Promise<Response> {
-  const most = limit(env.DECIDE_DAILY_LIMIT);
-  if (most === null) return failure(503, "not configured");
+async function limits(request: Request, env: Env): Promise<Response> {
+  const defaults = { write: limit(env.WRITE_DAILY_LIMIT), ideate: limit(env.IDEATE_DAILY_LIMIT), decide: limit(env.DECIDE_DAILY_LIMIT) };
+  if (Object.values(defaults).includes(null)) return failure(503, "not configured");
   const minutes = offset(request);
   const bytes = await body(request);
   if (minutes === null || !bytes) return failure(400, "bad request");
   const stub = await authenticated(request, env, bytes);
   if (stub instanceof Response) return stub;
-  return json({ remaining: await stub.remaining("decide", localDay(minutes), most) });
+  const day = localDay(minutes);
+  const kinds = Object.entries(defaults) as [Kind, number][];
+  return json(Object.fromEntries(await Promise.all(kinds.map(async ([kind, most]) => [kind, await stub.allowance(kind, day, most)]))));
 }
 
 export default {
@@ -183,8 +185,8 @@ export default {
         return write(request, env, "ideate");
       case "/v1/decide":
         return decide(request, env);
-      case "/v1/decide/remaining":
-        return remaining(request, env);
+      case "/v1/limits":
+        return limits(request, env);
       default:
         return failure(404, "not found");
     }
