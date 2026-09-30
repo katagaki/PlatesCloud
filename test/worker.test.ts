@@ -93,7 +93,7 @@ describe("writing", () => {
     expect(body.choices[0].message.content).toBe("Egg Fried Rice");
     expect(response.headers.get("X-Plates-Remaining")).toBe("2");
     expect(run).toHaveBeenCalledWith("@cf/google/gemma-4-26b-a4b-it", {
-      messages: chat.messages, max_tokens: 1400, temperature: 0.2, stream: false,
+      messages: chat.messages, max_tokens: 1400, temperature: 0.2, stream: false, chat_template_kwargs: { enable_thinking: false },
     });
   });
 

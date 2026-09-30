@@ -120,7 +120,7 @@ async function write(request: Request, env: Env): Promise<Response> {
   const stub = await authenticated(request, env, bytes);
   if (stub instanceof Response) return stub;
   return metered(stub, "write", localDay(minutes), most, undefined, async (remaining) => {
-    const result = await env.AI.run(GEMMA_MODEL, chat);
+    const result = await env.AI.run(GEMMA_MODEL, { ...chat, chat_template_kwargs: { enable_thinking: false } });
     const headers = { "X-Plates-Remaining": String(remaining) };
     if (chat.stream) {
       if (!(result instanceof ReadableStream)) throw new Error("gemma returned no stream");
