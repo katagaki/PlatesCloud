@@ -27,16 +27,7 @@ Plain vars are read from the environment by `cloudflare.config.ts` at deploy tim
 | `WRITE_DAILY_LIMIT` | Gemma calls per device per day, ideas and recipes together |
 | `DECIDE_DAILY_LIMIT` | Decide for me picks per device per day |
 
-The two limits are defaults. A device whose Durable Object has a row in its `limits` table (`kind` is `write` or `decide`, `daily` a whole number) uses that instead, so one device can be given more or fewer calls without a deploy.
-
-Each device's Durable Object is named by its key ID in base64url and keeps everything in SQL tables, so it can be read and edited from the Data Studio in the Cloudflare dashboard:
-
-| Table | Holds |
-| --- | --- |
-| `limits` | Per-device daily limits, as above |
-| `key` | The attested public key and the last assertion counter |
-| `usage` | Calls used today, one row per `kind` |
-| `answers` | Today's recent Decide for me answers by `request_id` |
+The two limits are defaults. A device whose Durable Object has a row in its `limits` table (`kind` is `write` or `decide`, `daily` a whole number) uses that instead, so one device can be given more or fewer calls without a deploy. Each device's Durable Object is named by its key ID in base64url, and `limits` is its only SQL table: the key, the counter, and the daily counts stay in its key-value storage.
 
 For example, `INSERT OR REPLACE INTO limits (kind, daily) VALUES ('write', 50)` gives a device 50 Gemma calls a day.
 
