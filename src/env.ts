@@ -14,6 +14,7 @@ export interface Env {
   DECIDE_DAILY_LIMIT: string;
   CHALLENGE_SECRET?: string;
   JEV_API_KEY?: string;
+  SKIP_APP_ATTEST?: string;
 }
 
 export function appId(env: Env): string | null {

@@ -46,6 +46,7 @@ Outside CI, secrets are uploaded with `npm run deploy:staging -- --secrets-file 
 | --- | --- |
 | `CHALLENGE_SECRET` | Any long random string; signs attestation challenges |
 | `JEV_API_KEY` | A TypeSafe API key |
+| `SKIP_APP_ATTEST` | `true` to accept unsigned requests to `localhost`, so a debug build in Simulator can call `npm run dev`. Ignored on any other host; never set it in a deploy |
 
 Workers AI needs no key: the `AI` binding runs on the account the Worker is deployed to.
 

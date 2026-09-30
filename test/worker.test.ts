@@ -70,6 +70,13 @@ describe("writing", () => {
     expect((await stranger.post("/v1/chat/completions", chat)).status).toBe(401);
   });
 
+  it("skips App Attest only on localhost when told to", async () => {
+    const skipping = { ...env, SKIP_APP_ATTEST: "true", AI: { run: async () => ({ response: "" }) } } as Env;
+    const post = (host: string) => worker.fetch(new Request(`http://${host}/v1/chat/completions`, { method: "POST", body: JSON.stringify(chat) }), skipping);
+    expect((await post("localhost:8787")).status).toBe(200);
+    expect((await post("plates.test")).status).toBe(401);
+  });
+
   it("refuses a replayed assertion", async () => {
     const phone = await Phone.create();
     const body = new TextEncoder().encode(JSON.stringify(chat));

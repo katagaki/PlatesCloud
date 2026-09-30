@@ -44,7 +44,12 @@ function device(env: Env, keyId: Uint8Array): DurableObjectStub<Device> {
   return env.DEVICE.get(env.DEVICE.idFromName(base64UrlEncode(keyId)));
 }
 
+function local(request: Request, env: Env): boolean {
+  return env.SKIP_APP_ATTEST === "true" && ["localhost", "127.0.0.1"].includes(new URL(request.url).hostname);
+}
+
 async function authenticated(request: Request, env: Env, bytes: Uint8Array): Promise<DurableObjectStub<Device> | Response> {
+  if (local(request, env)) return env.DEVICE.get(env.DEVICE.idFromName("local"));
   const app = appId(env);
   if (!app) return failure(503, "not configured");
   const keyId = base64Decode(request.headers.get("X-Plates-Key-Id") ?? "");
