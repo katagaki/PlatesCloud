@@ -68,6 +68,9 @@ describe("writing", () => {
     expect((await phone.post("/v1/chat/completions", chat, { assertion: "AAAA" })).status).toBe(401);
     const stranger = await Phone.create(false);
     expect((await stranger.post("/v1/chat/completions", chat)).status).toBe(401);
+    await runInDurableObject(stranger.stub(), (_, state) => {
+      expect(state.storage.sql.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE '_cf_%'").toArray()).toEqual([]);
+    });
   });
 
   it("skips App Attest only on localhost when told to", async () => {

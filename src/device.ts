@@ -20,12 +20,12 @@ export interface Reservation {
 const KEPT_ANSWERS = 20;
 
 export class Device extends DurableObject<Env> {
-  constructor(ctx: DurableObjectState, env: Env) {
-    super(ctx, env);
-    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS limits (kind TEXT PRIMARY KEY, daily INTEGER)");
+  private createLimits(): void {
+    this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS limits (kind TEXT PRIMARY KEY, daily INTEGER)");
   }
 
   private limit(kind: Kind, fallback: number): number {
+    this.createLimits();
     const daily = this.ctx.storage.sql.exec("SELECT daily FROM limits WHERE kind = ?", kind).toArray()[0]?.daily;
     return Number.isSafeInteger(daily) && (daily as number) >= 0 ? (daily as number) : fallback;
   }
@@ -33,6 +33,7 @@ export class Device extends DurableObject<Env> {
   async register(point: Uint8Array): Promise<boolean> {
     if (await this.ctx.storage.get("point")) return false;
     await this.ctx.storage.put({ point, counter: 0 });
+    this.createLimits();
     return true;
   }
 
