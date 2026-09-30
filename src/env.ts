@@ -11,6 +11,7 @@ export interface Env {
   APP_BUNDLE_ID: string;
   APP_ATTEST_ENVIRONMENT: string;
   WRITE_DAILY_LIMIT: string;
+  IDEATE_DAILY_LIMIT: string;
   DECIDE_DAILY_LIMIT: string;
   CHALLENGE_SECRET?: string;
   JEV_API_KEY?: string;

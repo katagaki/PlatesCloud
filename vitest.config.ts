@@ -13,6 +13,7 @@ export default defineConfig({
           APP_BUNDLE_ID: "com.tsubuzaki.Plates",
           APP_ATTEST_ENVIRONMENT: "development",
           WRITE_DAILY_LIMIT: "3",
+          IDEATE_DAILY_LIMIT: "2",
           DECIDE_DAILY_LIMIT: "2",
           CHALLENGE_SECRET: "test-secret",
           JEV_API_KEY: "jev-test",

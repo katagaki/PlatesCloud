@@ -3,7 +3,7 @@ import { base64Decode, base64UrlEncode } from "./bytes";
 import { type Pick, askJev, parseDecision } from "./decide";
 import { Device, type Kind } from "./device";
 import { type Env, appId, limit } from "./env";
-import { GEMMA_MODEL, completion, completionStream, parseChat } from "./gemma";
+import { GEMMA_MODEL, MAX_IDEA_TOKENS, MAX_OUTPUT_TOKENS, completion, completionStream, parseChat } from "./gemma";
 
 export { Device };
 
@@ -109,17 +109,17 @@ async function metered(
   }
 }
 
-async function write(request: Request, env: Env): Promise<Response> {
-  const most = limit(env.WRITE_DAILY_LIMIT);
+async function write(request: Request, env: Env, kind: "write" | "ideate"): Promise<Response> {
+  const most = limit(kind === "write" ? env.WRITE_DAILY_LIMIT : env.IDEATE_DAILY_LIMIT);
   if (most === null) return failure(503, "not configured");
   const minutes = offset(request);
   const bytes = await body(request);
   if (minutes === null || !bytes) return failure(400, "bad request");
-  const chat = parseChat(parse(bytes));
+  const chat = parseChat(parse(bytes), kind === "write" ? MAX_OUTPUT_TOKENS : MAX_IDEA_TOKENS);
   if (typeof chat === "string") return failure(400, chat);
   const stub = await authenticated(request, env, bytes);
   if (stub instanceof Response) return stub;
-  return metered(stub, "write", localDay(minutes), most, undefined, async (remaining) => {
+  return metered(stub, kind, localDay(minutes), most, undefined, async (remaining) => {
     const result = await env.AI.run(GEMMA_MODEL, { ...chat, chat_template_kwargs: { enable_thinking: false } });
     const headers = { "X-Plates-Remaining": String(remaining) };
     if (chat.stream) {
@@ -178,7 +178,9 @@ export default {
       case "/v1/attest":
         return attest(request, env);
       case "/v1/chat/completions":
-        return write(request, env);
+        return write(request, env, "write");
+      case "/v1/ideate":
+        return write(request, env, "ideate");
       case "/v1/decide":
         return decide(request, env);
       case "/v1/decide/remaining":

@@ -1,5 +1,6 @@
 export const GEMMA_MODEL = "@cf/google/gemma-4-26b-a4b-it";
 export const MAX_OUTPUT_TOKENS = 1400;
+export const MAX_IDEA_TOKENS = 500;
 const MAX_MESSAGES = 16;
 const MAX_CHARACTERS = 24_000;
 const ROLES = new Set(["system", "user", "assistant"]);
@@ -11,7 +12,7 @@ export interface Chat {
   stream: boolean;
 }
 
-export function parseChat(body: unknown): Chat | string {
+export function parseChat(body: unknown, most = MAX_OUTPUT_TOKENS): Chat | string {
   if (typeof body !== "object" || body === null) return "body must be an object";
   const { messages, max_tokens, temperature, stream } = body as { [key: string]: unknown };
   if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_MESSAGES) return "messages must hold 1 to 16 entries";
@@ -23,8 +24,8 @@ export function parseChat(body: unknown): Chat | string {
     characters += content.length;
   }
   if (characters > MAX_CHARACTERS) return "messages are too long";
-  const tokens = max_tokens === undefined ? MAX_OUTPUT_TOKENS : max_tokens;
-  if (!Number.isInteger(tokens) || (tokens as number) < 1 || (tokens as number) > MAX_OUTPUT_TOKENS) return "max_tokens must be 1 to 1400";
+  const tokens = max_tokens === undefined ? most : max_tokens;
+  if (!Number.isInteger(tokens) || (tokens as number) < 1 || (tokens as number) > most) return `max_tokens must be 1 to ${most}`;
   const heat = temperature === undefined ? 0.7 : temperature;
   if (typeof heat !== "number" || heat < 0 || heat > 1.5) return "temperature must be 0 to 1.5";
   return {

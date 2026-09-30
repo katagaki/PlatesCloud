@@ -118,6 +118,17 @@ describe("writing", () => {
     expect(over.headers.get("X-Plates-Remaining")).toBe("0");
   });
 
+  it("counts ideas apart from recipes and keeps them short", async () => {
+    const phone = await Phone.create();
+    expect((await phone.post("/v1/ideate", { ...chat, max_tokens: 1400 })).status).toBe(400);
+    for (let i = 1; i >= 0; i--) {
+      const response = await phone.post("/v1/ideate", chat);
+      expect(response.headers.get("X-Plates-Remaining")).toBe(String(i));
+    }
+    expect((await phone.post("/v1/ideate", chat)).status).toBe(429);
+    expect((await phone.post("/v1/chat/completions", chat)).headers.get("X-Plates-Remaining")).toBe("2");
+  });
+
   it("uses a limit set in the device's storage over the default", async () => {
     const phone = await Phone.create();
     await runInDurableObject(phone.stub(), (_, state) => {

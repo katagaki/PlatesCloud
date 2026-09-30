@@ -24,10 +24,11 @@ Plain vars are read from the environment by `cloudflare.config.ts` at deploy tim
 | `APPLE_TEAM_ID` | The 10-character Apple team ID |
 | `APP_BUNDLE_ID` | The app's bundle ID, `com.tsubuzaki.Plates` |
 | `APP_ATTEST_ENVIRONMENT` | `development` for debug builds, `production` for TestFlight and the App Store |
-| `WRITE_DAILY_LIMIT` | Gemma calls per device per day, ideas and recipes together |
+| `WRITE_DAILY_LIMIT` | Recipes Gemma writes per device per day |
+| `IDEATE_DAILY_LIMIT` | Sets of ideas Gemma writes per device per day |
 | `DECIDE_DAILY_LIMIT` | Decide for me picks per device per day |
 
-The two limits are defaults. A device whose Durable Object has a row in its `limits` table (`kind` is `write` or `decide`, `daily` a whole number) uses that instead, so one device can be given more or fewer calls without a deploy. Each device's Durable Object is named by its key ID in base64url, and `limits` is its only SQL table: the key, the counter, and the daily counts stay in its key-value storage.
+The three limits are defaults. A device whose Durable Object has a row in its `limits` table (`kind` is `write`, `ideate`, or `decide`, `daily` a whole number) uses that instead, so one device can be given more or fewer calls without a deploy. Each device's Durable Object is named by its key ID in base64url, and `limits` is its only SQL table: the key, the counter, and the daily counts stay in its key-value storage.
 
 For example, `INSERT OR REPLACE INTO limits (kind, daily) VALUES ('write', 50)` gives a device 50 Gemma calls a day.
 
@@ -56,6 +57,7 @@ Everything is `POST` except `/health`. The signed endpoints take three headers:
 | `/v1/challenge` | No | Returns `{ "challenge" }`, good for five minutes |
 | `/v1/attest` | No | Takes `{ keyId, attestation, challenge }`. The attestation's client data hash is the SHA-256 of the challenge string's UTF-8 bytes. Registers the key once |
 | `/v1/chat/completions` | Yes | OpenAI Chat Completions in and out, streamed when `stream` is true. Always Gemma 4 26B A4B; `max_tokens` is capped at 1,400 |
+| `/v1/ideate` | Yes | The same as `/v1/chat/completions`, for the dish ideas: counted against `IDEATE_DAILY_LIMIT`, with `max_tokens` capped at 500 |
 | `/v1/decide` | Yes | Takes `{ requestId, request, ingredients, tools, ideas: [{ title, summary }] }` and returns `{ index, confidence, probabilities, remaining }` |
 | `/v1/decide/remaining` | Yes | Returns `{ remaining }` for today |
 

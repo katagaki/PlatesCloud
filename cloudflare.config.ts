@@ -23,6 +23,7 @@ export default defineConfig((ctx) => {
 				APP_BUNDLE_ID: text("APP_BUNDLE_ID"),
 				APP_ATTEST_ENVIRONMENT: text("APP_ATTEST_ENVIRONMENT"),
 				WRITE_DAILY_LIMIT: text("WRITE_DAILY_LIMIT"),
+				IDEATE_DAILY_LIMIT: text("IDEATE_DAILY_LIMIT"),
 				DECIDE_DAILY_LIMIT: text("DECIDE_DAILY_LIMIT"),
 				DEVICE: bindings.durableObject({
 					worker: name,
