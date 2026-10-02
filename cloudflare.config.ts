@@ -25,6 +25,7 @@ export default defineConfig((ctx) => {
 				WRITE_DAILY_LIMIT: text("WRITE_DAILY_LIMIT"),
 				IDEATE_DAILY_LIMIT: text("IDEATE_DAILY_LIMIT"),
 				DECIDE_DAILY_LIMIT: text("DECIDE_DAILY_LIMIT"),
+				TOPPINGS_DAILY_LIMIT: text("TOPPINGS_DAILY_LIMIT"),
 				DEVICE: bindings.durableObject({
 					worker: name,
 					exportName: "Device",

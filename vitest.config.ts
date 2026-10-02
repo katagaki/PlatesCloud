@@ -15,6 +15,7 @@ export default defineConfig({
           WRITE_DAILY_LIMIT: "3",
           IDEATE_DAILY_LIMIT: "2",
           DECIDE_DAILY_LIMIT: "2",
+          TOPPINGS_DAILY_LIMIT: "2",
           CHALLENGE_SECRET: "test-secret",
           JEV_API_KEY: "jev-test",
         },

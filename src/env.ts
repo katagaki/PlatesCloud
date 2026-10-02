@@ -13,6 +13,7 @@ export interface Env {
   WRITE_DAILY_LIMIT: string;
   IDEATE_DAILY_LIMIT: string;
   DECIDE_DAILY_LIMIT: string;
+  TOPPINGS_DAILY_LIMIT: string;
   CHALLENGE_SECRET?: string;
   JEV_API_KEY?: string;
   SKIP_APP_ATTEST?: string;

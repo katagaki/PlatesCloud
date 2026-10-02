@@ -204,3 +204,46 @@ describe("deciding", () => {
     expect((await phone.post("/v1/decide", { ...ideas, ideas: [ideas.ideas[0]] })).status).toBe(400);
   });
 });
+
+describe("toppings", () => {
+  const dish = {
+    dish: "Spaghetti Carbonara",
+    steps: [{ title: "Plate the carbonara", points: ["Finish with the last of the pecorino and more pepper."] }],
+    ingredients: ["Pecorino", "Salt", "Pepper"],
+  };
+
+  function nouls(values: number[], status = 200) {
+    return vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(JSON.stringify({
+      model: "jev-1.13.0",
+      answers: Object.fromEntries(values.map((noul, index) => [`line_${index + 1}`, { type: "noul", noul }])),
+    }), { status }));
+  }
+
+  it("asks Jev one question per line and returns the answers in order", async () => {
+    const phone = await Phone.create();
+    const fetch = nouls([0.96, 0.1, 0.93]);
+    const response = await phone.post("/v1/toppings", dish);
+    expect(await response.json()).toEqual({ visible: [0.96, 0.1, 0.93], remaining: 1 });
+    const sent = JSON.parse(fetch.mock.calls[0][1]!.body as string);
+    expect(sent.state).toEqual({ dish: "Spaghetti Carbonara", method: [{ step: "Plate the carbonara", points: dish.steps[0].points }] });
+    expect(Object.keys(sent.questions)).toEqual(["line_1", "line_2", "line_3"]);
+    expect(sent.questions.line_3).toMatchObject({ type: "noul", instructions: { ingredient: "Pepper" } });
+  });
+
+  it("gives back a call Jev does not fully answer, and stops at the limit", async () => {
+    const phone = await Phone.create();
+    nouls([0.9]);
+    expect((await phone.post("/v1/toppings", dish)).status).toBe(502);
+    vi.restoreAllMocks();
+    nouls([0.9, 0.1, 0.9]);
+    expect((await phone.post("/v1/toppings", dish)).status).toBe(200);
+    expect((await phone.post("/v1/toppings", dish)).status).toBe(200);
+    expect((await phone.post("/v1/toppings", dish)).status).toBe(429);
+  });
+
+  it("rejects a dish without lines or steps", async () => {
+    const phone = await Phone.create();
+    expect((await phone.post("/v1/toppings", { ...dish, ingredients: [] })).status).toBe(400);
+    expect((await phone.post("/v1/toppings", { ...dish, steps: [] })).status).toBe(400);
+  });
+});

@@ -4,6 +4,7 @@ import { type Pick, askJev, parseDecision } from "./decide";
 import { Device, type Kind } from "./device";
 import { type Env, appId, limit } from "./env";
 import { GEMMA_MODEL, MAX_IDEA_TOKENS, MAX_OUTPUT_TOKENS, completion, completionStream, parseChat } from "./gemma";
+import { askToppings, parseToppings } from "./toppings";
 
 export { Device };
 
@@ -155,6 +156,23 @@ async function decide(request: Request, env: Env): Promise<Response> {
   );
 }
 
+async function toppings(request: Request, env: Env): Promise<Response> {
+  const most = limit(env.TOPPINGS_DAILY_LIMIT);
+  if (most === null || !env.JEV_API_KEY) return failure(503, "not configured");
+  const key = env.JEV_API_KEY;
+  const minutes = offset(request);
+  const bytes = await body(request);
+  if (minutes === null || !bytes) return failure(400, "bad request");
+  const asked = parseToppings(parse(bytes));
+  if (typeof asked === "string") return failure(400, asked);
+  const stub = await authenticated(request, env, bytes);
+  if (stub instanceof Response) return stub;
+  return metered(stub, "toppings", localDay(minutes), most, undefined, async (remaining) => {
+    const visible = await askToppings(asked, key);
+    return json({ visible, remaining }, 200, { "X-Plates-Remaining": String(remaining) });
+  });
+}
+
 async function limits(request: Request, env: Env): Promise<Response> {
   const defaults = { write: limit(env.WRITE_DAILY_LIMIT), ideate: limit(env.IDEATE_DAILY_LIMIT), decide: limit(env.DECIDE_DAILY_LIMIT) };
   if (Object.values(defaults).includes(null)) return failure(503, "not configured");
@@ -185,6 +203,8 @@ export default {
         return write(request, env, "ideate");
       case "/v1/decide":
         return decide(request, env);
+      case "/v1/toppings":
+        return toppings(request, env);
       case "/v1/limits":
         return limits(request, env);
       default:

@@ -43,6 +43,7 @@ jobs:
       WRITE_DAILY_LIMIT: ${{ vars.WRITE_DAILY_LIMIT }}
       IDEATE_DAILY_LIMIT: ${{ vars.IDEATE_DAILY_LIMIT }}
       DECIDE_DAILY_LIMIT: ${{ vars.DECIDE_DAILY_LIMIT }}
+      TOPPINGS_DAILY_LIMIT: ${{ vars.TOPPINGS_DAILY_LIMIT }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -68,6 +69,7 @@ jobs:
       WRITE_DAILY_LIMIT: ${{ vars.WRITE_DAILY_LIMIT }}
       IDEATE_DAILY_LIMIT: ${{ vars.IDEATE_DAILY_LIMIT }}
       DECIDE_DAILY_LIMIT: ${{ vars.DECIDE_DAILY_LIMIT }}
+      TOPPINGS_DAILY_LIMIT: ${{ vars.TOPPINGS_DAILY_LIMIT }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
