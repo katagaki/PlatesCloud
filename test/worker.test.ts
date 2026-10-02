@@ -143,7 +143,7 @@ describe("writing", () => {
     }
     expect((await phone.post("/v1/chat/completions", chat)).status).toBe(429);
     expect(await (await phone.post("/v1/limits", {})).json()).toEqual({
-      write: { limit: 5, remaining: 0 }, ideate: { limit: 2, remaining: 2 }, decide: { limit: 2, remaining: 2 },
+      write: { limit: 5, remaining: 0 }, ideate: { limit: 2, remaining: 2 }, decide: { limit: 2, remaining: 2 }, toppings: { limit: 2, remaining: 2 },
     });
   });
 
@@ -239,6 +239,7 @@ describe("toppings", () => {
     expect((await phone.post("/v1/toppings", dish)).status).toBe(200);
     expect((await phone.post("/v1/toppings", dish)).status).toBe(200);
     expect((await phone.post("/v1/toppings", dish)).status).toBe(429);
+    expect(await (await phone.post("/v1/limits", {})).json()).toMatchObject({ toppings: { limit: 2, remaining: 0 } });
   });
 
   it("rejects a dish without lines or steps", async () => {

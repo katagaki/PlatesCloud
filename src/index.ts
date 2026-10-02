@@ -174,7 +174,7 @@ async function toppings(request: Request, env: Env): Promise<Response> {
 }
 
 async function limits(request: Request, env: Env): Promise<Response> {
-  const defaults = { write: limit(env.WRITE_DAILY_LIMIT), ideate: limit(env.IDEATE_DAILY_LIMIT), decide: limit(env.DECIDE_DAILY_LIMIT) };
+  const defaults = { write: limit(env.WRITE_DAILY_LIMIT), ideate: limit(env.IDEATE_DAILY_LIMIT), decide: limit(env.DECIDE_DAILY_LIMIT), toppings: limit(env.TOPPINGS_DAILY_LIMIT) };
   if (Object.values(defaults).includes(null)) return failure(503, "not configured");
   const minutes = offset(request);
   const bytes = await body(request);
